@@ -23,6 +23,7 @@ import {
   ModalFooter,
   ModalHeader,
 } from "@/components/ui/modal";
+import { Pressable } from "@/components/ui/pressable";
 import {
   Select,
   SelectBackdrop,
@@ -38,6 +39,7 @@ import {
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Task, TaskStatus, useTask } from "@/stores/task-provider";
+import { changeTaskStatus } from "@/utils/change-task-status";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import { FlatList, View } from "react-native";
@@ -88,12 +90,21 @@ export function TaskScreen() {
 }
 
 function TaskItem({ task }: { task: Task }) {
+  const { updateTask } = useTask();
+
+  function onPress() {
+    updateTask({ ...task, status: changeTaskStatus(task.status) });
+  }
+
   return (
-    <Card className="p-5 rounded-lg">
-      <Heading size="md" className="mb-1">
-        {task.title}
-      </Heading>
-    </Card>
+    <Pressable onPress={onPress}>
+      <Card className="p-5 rounded-lg">
+        <Heading size="md" className="mb-1">
+          {task.title}
+        </Heading>
+        <Text>{task.status}</Text>
+      </Card>
+    </Pressable>
   );
 }
 

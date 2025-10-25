@@ -9,19 +9,21 @@ export enum TaskStatus {
 export interface Task {
   id: string;
   title: string;
-  status: TaskStatus
+  status: TaskStatus;
 }
 
 interface ITaskContext {
   tasks: Task[];
   addTask: (task: Task) => void;
   removeTask: (id: string) => void;
+  updateTask: (task: Task) => void;
 }
 
 const TaskContext = React.createContext<ITaskContext>({
   tasks: [],
   addTask: () => {},
   removeTask: () => {},
+  updateTask: () => {},
 });
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
@@ -35,8 +37,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
   }
 
+  function updateTask(task: Task) {
+    setTasks((prevTasks) =>
+      prevTasks.map((t) => (t.id === task.id ? task : t))
+    );
+  }
+
   return (
-    <TaskContext.Provider value={{ tasks, addTask, removeTask }}>
+    <TaskContext.Provider value={{ tasks, addTask, removeTask, updateTask }}>
       {children}
     </TaskContext.Provider>
   );
