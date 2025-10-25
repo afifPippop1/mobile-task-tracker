@@ -1,10 +1,5 @@
-import { Text } from "@/components/ui/text";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { OnboardScreen } from "@/screens/onboard-screen";
 
 export default function Home() {
-  return (
-    <SafeAreaView>
-      <Text>Hello</Text>
-    </SafeAreaView>
-  );
+  return <OnboardScreen />;
 }
