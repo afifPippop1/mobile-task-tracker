@@ -1,3 +1,4 @@
+import { Badge, BadgeIcon, BadgeText } from "@/components/ui/badge";
 import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Fab, FabIcon } from "@/components/ui/fab";
@@ -7,8 +8,10 @@ import {
   FormControlLabelText,
 } from "@/components/ui/form-control";
 import { Heading } from "@/components/ui/heading";
+import { HStack } from "@/components/ui/hstack";
 import {
   AddIcon,
+  CheckIcon,
   ChevronDownIcon,
   CloseIcon,
   Icon,
@@ -39,7 +42,10 @@ import {
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Task, TaskStatus, useTask } from "@/stores/task-provider";
-import { changeTaskStatus } from "@/utils/change-task-status";
+import { changeTaskStatus, getTaskStatusColor } from "@/utils/task-status";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import dayjs from "dayjs";
+import * as Notifications from "expo-notifications";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import { FlatList, View } from "react-native";
@@ -97,14 +103,29 @@ function TaskItem({ task }: { task: Task }) {
   }
 
   return (
-    <Pressable onPress={onPress}>
-      <Card className="p-5 rounded-lg">
+    <Card className="p-5 rounded-lg flex-row items-start">
+      <View className="flex-1">
         <Heading size="md" className="mb-1">
           {task.title}
         </Heading>
-        <Text>{task.status}</Text>
-      </Card>
-    </Pressable>
+        <HStack>
+          {task.dueTime && (
+            <Text>{dayjs(task.dueTime).format("DD-MM-YYYY HH:mm")}</Text>
+          )}
+        </HStack>
+      </View>
+      <Pressable onPress={onPress}>
+        <Badge
+          size="lg"
+          variant="solid"
+          action="muted"
+          style={{ backgroundColor: getTaskStatusColor(task.status) }}
+        >
+          <BadgeText>{task.status}</BadgeText>
+          <BadgeIcon as={CheckIcon} className="ml-2" />
+        </Badge>
+      </Pressable>
+    </Card>
   );
 }
 
@@ -124,15 +145,45 @@ function TaskModal({
     },
   });
 
+  const [dueTime, setDueTime] = React.useState(new Date());
+  const [showPicker, setShowPicker] = React.useState(false);
+
   function onSubmit(task: Task) {
-    addTask(task);
+    const taskWithDueTime = { ...task, dueTime };
+    console.log(taskWithDueTime);
+    addTask(taskWithDueTime);
+    if (dueTime) {
+      const now = new Date();
+      let triggerDate = new Date(dueTime);
+      // If the selected time is earlier than now, schedule for next day
+      if (triggerDate <= now) {
+        triggerDate.setDate(triggerDate.getDate() + 1);
+      }
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Task Reminder",
+          body: task.title,
+          sound: true,
+        },
+        trigger: {
+          date: triggerDate,
+        } as Notifications.NotificationTriggerInput,
+      });
+    }
     handleClose();
   }
 
   function handleClose() {
     form.reset();
+    setDueTime(new Date());
+    setShowPicker(false);
     onClose();
   }
+
+  function showTimePicker() {
+    setShowPicker(true);
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalBackdrop />
@@ -205,6 +256,24 @@ function TaskModal({
               name="status"
             />
           </FormControl>
+          <Pressable onPress={showTimePicker}>
+            <Text>
+              Selected time: {dayjs(dueTime).format("DD-MM-YYYY HH:mm")}
+            </Text>
+          </Pressable>
+          {showPicker && (
+            <DateTimePicker
+              value={dueTime}
+              mode="datetime"
+              display="spinner"
+              onChange={(event, selectedDate) => {
+                if (selectedDate) {
+                  setDueTime(selectedDate);
+                }
+                setShowPicker(false);
+              }}
+            />
+          )}
         </ModalBody>
         <ModalFooter>
           <Button

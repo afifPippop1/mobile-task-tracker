@@ -10,6 +10,7 @@ export interface Task {
   id: string;
   title: string;
   status: TaskStatus;
+  dueTime?: Date;
 }
 
 interface ITaskContext {

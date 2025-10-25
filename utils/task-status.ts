@@ -9,3 +9,14 @@ export function changeTaskStatus(status: string) {
     return TaskStatus.TODO;
   }
 }
+
+export function getTaskStatusColor(status: TaskStatus) {
+  switch (status) {
+    case TaskStatus.TODO:
+      return "#9CA3AF";
+    case TaskStatus.IN_PROGRESS:
+      return "#3B82F6";
+    case TaskStatus.DONE:
+      return "#10B981";
+  }
+}
