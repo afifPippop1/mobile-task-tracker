@@ -16,6 +16,7 @@ import {
   CloseIcon,
   EditIcon,
   Icon,
+  SearchIcon,
 } from "@/components/ui/icon";
 import { Input, InputField } from "@/components/ui/input";
 import {
@@ -42,6 +43,7 @@ import {
 } from "@/components/ui/select";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
+import { useAuth } from "@/stores/auth-provider";
 import { Task, TaskStatus, useTask } from "@/stores/task-provider";
 import { changeTaskStatus, getTaskStatusColor } from "@/utils/task-status";
 import DateTimePicker, {
@@ -71,6 +73,7 @@ Notifications.setNotificationHandler({
 export function TaskScreen() {
   const { tasks } = useTask();
   const [showModal, setShowModal] = React.useState(false);
+  const [query, setQuery] = React.useState("");
 
   function onShowModal() {
     setShowModal(true);
@@ -79,48 +82,52 @@ export function TaskScreen() {
   function onCloseModal() {
     setShowModal(false);
   }
-
-  console.log(tasks);
+  const filteredTasks = React.useMemo(() => {
+    return tasks.filter((task) => task.title.toLowerCase().includes(query));
+  }, [tasks, query]);
 
   const sections = React.useMemo(() => {
     return Object.values(TaskStatus).map((status) => ({
       title: status,
-      data: tasks.filter((task) => task.status === status),
+      data: filteredTasks.filter((task) => task.status === status),
     }));
-  }, [tasks]);
+  }, [filteredTasks]);
 
   return (
-    <SafeAreaView className="gap-8 flex-1 p-6">
-      {tasks.length > 0 && (
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <TaskItem task={item} />}
-          renderSectionHeader={({ section: { title } }) => (
-            <Heading size="sm" className="mt-4 mb-2">
-              {title}
-            </Heading>
-          )}
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-        />
-      )}
-      {!tasks.length && (
-        <View className="flex-1 items-center justify-center">
-          <VStack>
-            <Text>You have no tasks</Text>
-            <Button variant="outline" onPress={onShowModal}>
-              <Icon as={AddIcon} />
-              <Text>Add task</Text>
-            </Button>
-          </VStack>
-        </View>
-      )}
-      {tasks.length > 0 && (
-        <Fab size="lg" placement="bottom right" onPress={onShowModal}>
-          <FabIcon as={AddIcon} />
-        </Fab>
-      )}
-      <TaskModal isOpen={showModal} onClose={onCloseModal} />
+    <SafeAreaView className="flex-1">
+      <Header onSearchChange={setQuery} searchQuery={query} />
+      <View className="gap-8 flex-1 px-6">
+        {tasks.length > 0 && (
+          <SectionList
+            sections={sections}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <TaskItem task={item} />}
+            renderSectionHeader={({ section: { title } }) => (
+              <Heading size="sm" className="mt-4 mb-2">
+                {title}
+              </Heading>
+            )}
+            ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          />
+        )}
+        {!tasks.length && (
+          <View className="flex-1 items-center justify-center">
+            <VStack>
+              <Text>You have no tasks</Text>
+              <Button variant="outline" onPress={onShowModal}>
+                <Icon as={AddIcon} />
+                <Text>Add task</Text>
+              </Button>
+            </VStack>
+          </View>
+        )}
+        {tasks.length > 0 && (
+          <Fab size="lg" placement="bottom right" onPress={onShowModal}>
+            <FabIcon as={AddIcon} />
+          </Fab>
+        )}
+        <TaskModal isOpen={showModal} onClose={onCloseModal} />
+      </View>
     </SafeAreaView>
   );
 }
@@ -414,5 +421,46 @@ function TaskModal(props: {
         </ModalFooter>
       </ModalContent>
     </Modal>
+  );
+}
+
+export function Header({
+  onSearchChange,
+  searchQuery,
+}: {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+}) {
+  const { user } = useAuth();
+  const [searchOpen, setSearchOpen] = React.useState(false);
+
+  return (
+    <HStack className="justify-between items-start px-4 py-3">
+      {searchOpen ? (
+        <HStack className="flex-1 items-center space-x-2">
+          <Input className="flex-1">
+            <InputField
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChangeText={onSearchChange}
+              autoFocus
+            />
+          </Input>
+          <Pressable onPress={() => setSearchOpen(false)} className="p-2">
+            <Icon as={SearchIcon} />
+          </Pressable>
+        </HStack>
+      ) : (
+        <>
+          <VStack>
+            <Text className="font-bold">Hi, {user.name}.</Text>
+            <Text>Here&apos;s your tasks:</Text>
+          </VStack>
+          <Pressable onPress={() => setSearchOpen(true)} className="p-2">
+            <Icon as={SearchIcon} />
+          </Pressable>
+        </>
+      )}
+    </HStack>
   );
 }
