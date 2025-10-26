@@ -129,21 +129,20 @@ function TaskItem({ task }: { task: Task }) {
   const { updateTask, removeTask } = useTask();
   const [showModal, setShowModal] = React.useState(false);
 
-  function onChangeStatus() {
-    updateTask({ ...task, status: changeTaskStatus(task.status) });
+  async function onChangeStatus() {
+    await updateTask({ ...task, status: changeTaskStatus(task.status) });
   }
 
-  function onMarkDone() {
-    console.log("Marking task as done");
-    updateTask({ ...task, status: TaskStatus.DONE });
+  async function onMarkDone() {
+    await updateTask({ ...task, status: TaskStatus.DONE });
   }
 
   function onPressCard() {
     setShowModal(true);
   }
 
-  function onDelete() {
-    removeTask(task.id);
+  async function onDelete() {
+    await removeTask(task.id);
   }
 
   return (
@@ -229,12 +228,7 @@ function TaskModal(props: {
   }, [props.task?.dueTime]);
 
   async function onSubmit(task: Task) {
-    const taskWithDueTime = { ...task, dueTime };
-    if (props.task) {
-      updateTask(taskWithDueTime);
-    } else {
-      addTask({ ...taskWithDueTime, id: uuid() });
-    }
+    let notificatoionId = "";
     if (dueTime) {
       const now = new Date();
       const triggerDate = new Date(
@@ -257,7 +251,7 @@ function TaskModal(props: {
           `Notification scheduled for ${dayjs(triggerDate).format("HH:mm")}`
         );
       } else {
-        await Notifications.scheduleNotificationAsync({
+        notificatoionId = await Notifications.scheduleNotificationAsync({
           content: {
             title: `Task Reminder: ${task.title}`,
             body: task.title,
@@ -273,6 +267,18 @@ function TaskModal(props: {
       // Log scheduled notifications for debugging
       // const scheduled = await Notifications.getAllScheduledNotificationsAsync();
       // console.log("Scheduled notifications:", scheduled);
+    }
+
+    const taskWithDueTime = { ...task, dueTime, notificatoionId };
+    if (props.task) {
+      if (props.task.notificationId) {
+        await Notifications.cancelScheduledNotificationAsync(
+          props.task.notificationId
+        );
+      }
+      await updateTask(taskWithDueTime);
+    } else {
+      await addTask({ ...taskWithDueTime, id: uuid() });
     }
     handleClose();
   }

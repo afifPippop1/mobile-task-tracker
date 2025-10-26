@@ -1,3 +1,7 @@
+import {
+  loadTasksFromLocalstorage,
+  saveTasksInLocalstorage,
+} from "@/utils/storage";
 import React from "react";
 
 export enum TaskStatus {
@@ -11,34 +15,49 @@ export interface Task {
   title: string;
   status: TaskStatus;
   dueTime?: Date;
+  notificationId?: string;
 }
 
 interface ITaskContext {
   tasks: Task[];
-  addTask: (task: Task) => void;
-  removeTask: (id: string) => void;
-  updateTask: (task: Task) => void;
+  addTask: (task: Task) => Promise<void>;
+  removeTask: (id: string) => Promise<void>;
+  updateTask: (task: Task) => Promise<void>;
 }
 
 const TaskContext = React.createContext<ITaskContext>({
   tasks: [],
-  addTask: () => {},
-  removeTask: () => {},
-  updateTask: () => {},
+  addTask: async () => {},
+  removeTask: async () => {},
+  updateTask: async () => {},
 });
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = React.useState<Task[]>([]);
 
-  function addTask(task: Task) {
+  React.useEffect(() => {
+    (async function () {
+      const tasks = await loadTasksFromLocalstorage();
+      setTasks(tasks);
+    })();
+    return () => setTasks([]);
+  }, []);
+
+  React.useEffect(() => {
+    (async function () {
+      await saveTasksInLocalstorage(tasks);
+    })();
+  }, [tasks]);
+
+  async function addTask(task: Task) {
     setTasks((prevTasks) => [...prevTasks, task]);
   }
 
-  function removeTask(id: string) {
+  async function removeTask(id: string) {
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
   }
 
-  function updateTask(task: Task) {
+  async function updateTask(task: Task) {
     setTasks((prevTasks) =>
       prevTasks.map((t) => (t.id === task.id ? task : t))
     );
