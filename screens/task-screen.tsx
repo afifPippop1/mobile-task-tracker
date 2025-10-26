@@ -50,6 +50,7 @@ import DateTimePicker, {
   DateTimePickerAndroid,
 } from "@react-native-community/datetimepicker";
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
@@ -60,6 +61,8 @@ import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import "react-native-get-random-values";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { v4 as uuid } from "uuid";
+
+dayjs.extend(relativeTime);
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -97,14 +100,14 @@ export function TaskScreen() {
   return (
     <SafeAreaView className="flex-1">
       <Header onSearchChange={setQuery} searchQuery={query} />
-      <View className="gap-8 flex-1 px-6">
+      <View className="gap-8 flex-1 px-4">
         {tasks.length > 0 && (
           <SectionList
             sections={sections}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => <TaskItem task={item} />}
             renderSectionHeader={({ section: { title } }) => (
-              <Heading size="sm" className="mt-4 mb-2">
+              <Heading size="sm" className="mt-4 mb-2 bg-secondary-100 py-4">
                 {title}
               </Heading>
             )}
@@ -179,15 +182,16 @@ function TaskItem({ task }: { task: Task }) {
       )}
     >
       <Pressable onPress={onPressCard}>
-        <Card className="p-5 rounded-lg flex-row items-start">
+        <Card
+          className="p-5 rounded-lg flex-row items-start"
+          style={{ marginLeft: 8 }}
+        >
           <View className="flex-1">
             <Heading size="md" className="mb-1">
               {task.title}
             </Heading>
             <HStack>
-              {task.dueTime && (
-                <Text>{dayjs(task.dueTime).format("DD-MM-YYYY HH:mm")}</Text>
-              )}
+              {task.dueTime && <Text>Notify {dayjs().from(task.dueTime)}</Text>}
             </HStack>
           </View>
           <Pressable onPress={onChangeStatus}>
@@ -387,7 +391,9 @@ function TaskModal(props: {
               />
             </FormControl>
             <Pressable onPress={showTimePicker}>
-              <Text>Remind me at: {dayjs(dueTime).format("DD-MM-YYYY HH:mm")}</Text>
+              <Text>
+                Remind me at: {dayjs(dueTime).format("DD-MM-YYYY HH:mm")}
+              </Text>
             </Pressable>
             {Platform.OS === "ios" && showPicker && (
               <DateTimePicker
