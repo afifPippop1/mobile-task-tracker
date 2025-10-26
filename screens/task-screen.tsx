@@ -53,6 +53,7 @@ import * as Notifications from "expo-notifications";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Alert, Platform, SectionList, View } from "react-native";
+import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import "react-native-get-random-values";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { v4 as uuid } from "uuid";
@@ -125,7 +126,7 @@ export function TaskScreen() {
 }
 
 function TaskItem({ task }: { task: Task }) {
-  const { updateTask } = useTask();
+  const { updateTask, removeTask } = useTask();
   const [showModal, setShowModal] = React.useState(false);
 
   function onChangeStatus() {
@@ -136,37 +137,56 @@ function TaskItem({ task }: { task: Task }) {
     setShowModal(true);
   }
 
+  function onDelete() {
+    removeTask(task.id);
+  }
+
   return (
-    <Pressable onPress={onPressCard}>
-      <Card className="p-5 rounded-lg flex-row items-start">
-        <View className="flex-1">
-          <Heading size="md" className="mb-1">
-            {task.title}
-          </Heading>
-          <HStack>
-            {task.dueTime && (
-              <Text>{dayjs(task.dueTime).format("DD-MM-YYYY HH:mm")}</Text>
-            )}
-          </HStack>
-        </View>
-        <Pressable onPress={onChangeStatus}>
-          <Badge
-            size="lg"
+    <Swipeable
+      renderRightActions={() => (
+        <View className="justify-center">
+          <Button
             variant="solid"
-            action="muted"
-            style={{ backgroundColor: getTaskStatusColor(task.status) }}
+            action="negative"
+            onPress={onDelete}
+            className="h-full justify-center rounded-none"
           >
-            <BadgeText>{task.status}</BadgeText>
-            <BadgeIcon as={CheckIcon} className="ml-2" />
-          </Badge>
-        </Pressable>
-      </Card>
-      <TaskModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        task={task}
-      />
-    </Pressable>
+            <Icon as={CloseIcon} />
+          </Button>
+        </View>
+      )}
+    >
+      <Pressable onPress={onPressCard}>
+        <Card className="p-5 rounded-lg flex-row items-start">
+          <View className="flex-1">
+            <Heading size="md" className="mb-1">
+              {task.title}
+            </Heading>
+            <HStack>
+              {task.dueTime && (
+                <Text>{dayjs(task.dueTime).format("DD-MM-YYYY HH:mm")}</Text>
+              )}
+            </HStack>
+          </View>
+          <Pressable onPress={onChangeStatus}>
+            <Badge
+              size="lg"
+              variant="solid"
+              action="muted"
+              style={{ backgroundColor: getTaskStatusColor(task.status) }}
+            >
+              <BadgeText>{task.status}</BadgeText>
+              <BadgeIcon as={CheckIcon} className="ml-2" />
+            </Badge>
+          </Pressable>
+        </Card>
+        <TaskModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          task={task}
+        />
+      </Pressable>
+    </Swipeable>
   );
 }
 
