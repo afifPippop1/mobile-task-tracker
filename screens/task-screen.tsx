@@ -14,6 +14,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   CloseIcon,
+  EditIcon,
   Icon,
 } from "@/components/ui/icon";
 import { Input, InputField } from "@/components/ui/input";
@@ -110,47 +111,58 @@ export function TaskScreen() {
 
 function TaskItem({ task }: { task: Task }) {
   const { updateTask } = useTask();
+  const [showModal, setShowModal] = React.useState(false);
 
-  function onPress() {
+  function onChangeStatus() {
     updateTask({ ...task, status: changeTaskStatus(task.status) });
   }
 
+  function onPressCard() {
+    setShowModal(true);
+  }
+
   return (
-    <Card className="p-5 rounded-lg flex-row items-start">
-      <View className="flex-1">
-        <Heading size="md" className="mb-1">
-          {task.title}
-        </Heading>
-        <HStack>
-          {task.dueTime && (
-            <Text>{dayjs(task.dueTime).format("DD-MM-YYYY HH:mm")}</Text>
-          )}
-        </HStack>
-      </View>
-      <Pressable onPress={onPress}>
-        <Badge
-          size="lg"
-          variant="solid"
-          action="muted"
-          style={{ backgroundColor: getTaskStatusColor(task.status) }}
-        >
-          <BadgeText>{task.status}</BadgeText>
-          <BadgeIcon as={CheckIcon} className="ml-2" />
-        </Badge>
-      </Pressable>
-    </Card>
+    <Pressable onPress={onPressCard}>
+      <Card className="p-5 rounded-lg flex-row items-start">
+        <View className="flex-1">
+          <Heading size="md" className="mb-1">
+            {task.title}
+          </Heading>
+          <HStack>
+            {task.dueTime && (
+              <Text>{dayjs(task.dueTime).format("DD-MM-YYYY HH:mm")}</Text>
+            )}
+          </HStack>
+        </View>
+        <Pressable onPress={onChangeStatus}>
+          <Badge
+            size="lg"
+            variant="solid"
+            action="muted"
+            style={{ backgroundColor: getTaskStatusColor(task.status) }}
+          >
+            <BadgeText>{task.status}</BadgeText>
+            <BadgeIcon as={CheckIcon} className="ml-2" />
+          </Badge>
+        </Pressable>
+      </Card>
+      <TaskModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        task={task}
+      />
+    </Pressable>
   );
 }
 
-function TaskModal({
-  isOpen,
-  onClose,
-}: {
+function TaskModal(props: {
   isOpen: boolean;
   onClose: () => void;
+  task?: Task;
 }) {
-  const { addTask } = useTask();
+  const { addTask, updateTask } = useTask();
   const form = useForm<Task>({
+    values: props.task,
     defaultValues: {
       id: uuid(),
       title: "",
@@ -158,13 +170,22 @@ function TaskModal({
     },
   });
 
-  const [dueTime, setDueTime] = React.useState(new Date());
+  const [dueTime, setDueTime] = React.useState(
+    props.task?.dueTime || new Date()
+  );
   const [showPicker, setShowPicker] = React.useState(false);
+
+  React.useEffect(() => {
+    setDueTime(props.task?.dueTime || new Date());
+  }, [props.task?.dueTime]);
 
   async function onSubmit(task: Task) {
     const taskWithDueTime = { ...task, dueTime };
-    console.log(taskWithDueTime);
-    addTask(taskWithDueTime);
+    if (props.task) {
+      updateTask(taskWithDueTime);
+    } else {
+      addTask(taskWithDueTime);
+    }
     if (dueTime) {
       const now = new Date();
       const triggerDate = new Date(
@@ -180,8 +201,6 @@ function TaskModal({
       if (triggerDate <= now) {
         triggerDate.setDate(triggerDate.getDate() + 1);
       }
-
-      console.log("Now:", now, "Trigger Date:", triggerDate);
 
       if (Platform.OS === "ios" && !Device.isDevice) {
         Alert.alert(
@@ -213,7 +232,7 @@ function TaskModal({
     form.reset();
     setDueTime(new Date());
     setShowPicker(false);
-    onClose();
+    props.onClose();
   }
 
   function showTimePicker() {
@@ -234,7 +253,7 @@ function TaskModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={props.isOpen} onClose={handleClose} size="md">
       <ModalBackdrop />
       <ModalContent>
         <ModalHeader>
@@ -329,13 +348,13 @@ function TaskModal({
             variant="outline"
             action="secondary"
             className="mr-3"
-            onPress={onClose}
+            onPress={handleClose}
           >
             <ButtonText>Cancel</ButtonText>
           </Button>
           <Button onPress={form.handleSubmit(onSubmit)}>
-            <ButtonIcon as={AddIcon} />
-            <ButtonText>Add</ButtonText>
+            <ButtonIcon as={props.task ? EditIcon : AddIcon} />
+            <ButtonText>{props.task ? "Edit" : "Add"}</ButtonText>
           </Button>
         </ModalFooter>
       </ModalContent>
