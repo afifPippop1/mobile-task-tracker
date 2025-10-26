@@ -133,6 +133,11 @@ function TaskItem({ task }: { task: Task }) {
     updateTask({ ...task, status: changeTaskStatus(task.status) });
   }
 
+  function onMarkDone() {
+    console.log("Marking task as done");
+    updateTask({ ...task, status: TaskStatus.DONE });
+  }
+
   function onPressCard() {
     setShowModal(true);
   }
@@ -143,6 +148,16 @@ function TaskItem({ task }: { task: Task }) {
 
   return (
     <Swipeable
+      renderLeftActions={() => (
+        <Button
+          variant="solid"
+          action="positive"
+          onPress={onMarkDone}
+          className="h-full justify-center rounded-none"
+        >
+          <Icon as={CheckIcon} />
+        </Button>
+      )}
       renderRightActions={() => (
         <View className="justify-center">
           <Button
