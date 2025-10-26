@@ -13,6 +13,10 @@ export async function setUserInLocalstorage(user: User) {
   await AsyncStorage.setItem("user", JSON.stringify(user));
 }
 
+export async function removeUserInLocalstorage() {
+  await AsyncStorage.removeItem("user");
+}
+
 export async function saveTasksInLocalstorage(tasks: Task[]) {
   await AsyncStorage.setItem("tasks", JSON.stringify(tasks));
 }
@@ -21,4 +25,8 @@ export async function loadTasksFromLocalstorage(): Promise<Task[]> {
   const tasks = await AsyncStorage.getItem("tasks");
   if (!tasks) return [];
   return JSON.parse(tasks) as Task[];
+}
+
+export async function removeTasksInLocalstorage() {
+  await AsyncStorage.removeItem("tasks");
 }

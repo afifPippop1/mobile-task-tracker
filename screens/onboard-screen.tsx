@@ -38,9 +38,10 @@ export function OnboardScreen() {
         <FormControl className="w-full">
           <Input variant="rounded" size="md">
             <InputField
-              placeholder="Enter Text here..."
+              placeholder="Your name"
               value={name}
               onChangeText={setName}
+              autoFocus
             />
           </Input>
         </FormControl>

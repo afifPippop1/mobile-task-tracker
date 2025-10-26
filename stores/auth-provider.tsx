@@ -1,5 +1,7 @@
 import {
   loadUserFromLocalStorage,
+  removeTasksInLocalstorage,
+  removeUserInLocalstorage,
   setUserInLocalstorage,
 } from "@/utils/storage";
 import React from "react";
@@ -11,11 +13,13 @@ export interface User {
 interface IAuthContext {
   user: User;
   setUser: (user: User) => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = React.createContext<IAuthContext>({
   user: { name: "" },
   setUser: () => {},
+  logout: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -29,8 +33,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserInLocalstorage(user).then(() => setUser(user));
   }
 
+  async function logout() {
+    await removeUserInLocalstorage();
+    setUser({ name: "" });
+    await removeTasksInLocalstorage();
+  }
+
   return (
-    <AuthContext.Provider value={{ user, setUser: setUserData }}>
+    <AuthContext.Provider value={{ user, setUser: setUserData, logout }}>
       {children}
     </AuthContext.Provider>
   );

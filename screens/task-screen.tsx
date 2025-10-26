@@ -52,6 +52,7 @@ import DateTimePicker, {
 import dayjs from "dayjs";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import { useRouter } from "expo-router";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Alert, Platform, SectionList, View } from "react-native";
@@ -325,85 +326,83 @@ function TaskModal(props: {
           </ModalCloseButton>
         </ModalHeader>
         <ModalBody>
-          <FormControl>
-            <FormControlLabel>
-              <FormControlLabelText></FormControlLabelText>
-            </FormControlLabel>
-            <Controller
-              control={form.control}
-              rules={{
-                required: true,
-              }}
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Input>
-                  <InputField
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    autoFocus
-                  />
-                </Input>
-              )}
-              name="title"
-            />
-          </FormControl>
-          <FormControl>
-            <FormControlLabel>
-              <FormControlLabelText>Status:</FormControlLabelText>
-            </FormControlLabel>
-
-            <Controller
-              control={form.control}
-              rules={{
-                required: true,
-              }}
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Select
-                  selectedValue={value}
-                  onValueChange={onChange}
-                  onBlur={onBlur}
-                >
-                  <SelectTrigger variant="outline" size="md">
-                    <SelectInput
-                      placeholder="Select option"
-                      className="w-[90%]"
+          <VStack className="gap-6">
+            <FormControl>
+              <Controller
+                control={form.control}
+                rules={{
+                  required: true,
+                }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <Input>
+                    <InputField
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      autoFocus
+                      placeholder="Task name"
                     />
-                    <SelectIcon className="mr-3" as={ChevronDownIcon} />
-                  </SelectTrigger>
-                  <SelectPortal>
-                    <SelectBackdrop />
-                    <SelectContent>
-                      <SelectDragIndicatorWrapper>
-                        <SelectDragIndicator />
-                      </SelectDragIndicatorWrapper>
-                      {Object.entries(TaskStatus).map(([key, value]) => (
-                        <SelectItem key={key} label={value} value={key} />
-                      ))}
-                    </SelectContent>
-                  </SelectPortal>
-                </Select>
-              )}
-              name="status"
-            />
-          </FormControl>
-          <Pressable onPress={showTimePicker}>
-            <Text>
-              Selected time: {dayjs(dueTime).format("DD-MM-YYYY HH:mm")}
-            </Text>
-          </Pressable>
-          {Platform.OS === "ios" && showPicker && (
-            <DateTimePicker
-              value={dueTime}
-              mode="datetime"
-              display="spinner"
-              onChange={(event, selectedDate) => {
-                if (selectedDate) {
-                  setDueTime(selectedDate);
-                }
-                setShowPicker(false);
-              }}
-            />
-          )}
+                  </Input>
+                )}
+                name="title"
+              />
+            </FormControl>
+            <FormControl>
+              <FormControlLabel>
+                <FormControlLabelText>Status:</FormControlLabelText>
+              </FormControlLabel>
+
+              <Controller
+                control={form.control}
+                rules={{
+                  required: true,
+                }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <Select
+                    selectedValue={value}
+                    onValueChange={onChange}
+                    onBlur={onBlur}
+                  >
+                    <SelectTrigger variant="outline" size="md">
+                      <SelectInput
+                        placeholder="Select option"
+                        className="w-[90%]"
+                      />
+                      <SelectIcon className="mr-3" as={ChevronDownIcon} />
+                    </SelectTrigger>
+                    <SelectPortal>
+                      <SelectBackdrop />
+                      <SelectContent>
+                        <SelectDragIndicatorWrapper>
+                          <SelectDragIndicator />
+                        </SelectDragIndicatorWrapper>
+                        {Object.entries(TaskStatus).map(([key, value]) => (
+                          <SelectItem key={key} label={value} value={key} />
+                        ))}
+                      </SelectContent>
+                    </SelectPortal>
+                  </Select>
+                )}
+                name="status"
+              />
+            </FormControl>
+            <Pressable onPress={showTimePicker}>
+              <Text>Remind me at: {dayjs(dueTime).format("DD-MM-YYYY HH:mm")}</Text>
+            </Pressable>
+            {Platform.OS === "ios" && showPicker && (
+              <DateTimePicker
+                value={dueTime}
+                mode="datetime"
+                display="spinner"
+                onChange={(event, selectedDate) => {
+                  if (selectedDate) {
+                    setDueTime(selectedDate);
+                  }
+                  setShowPicker(false);
+                }}
+              />
+            )}
+          </VStack>
         </ModalBody>
         <ModalFooter>
           <Button
@@ -431,8 +430,14 @@ export function Header({
   searchQuery: string;
   onSearchChange: (query: string) => void;
 }) {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const [searchOpen, setSearchOpen] = React.useState(false);
+
+  async function reset() {
+    await logout();
+    router.push("/");
+  }
 
   return (
     <HStack className="justify-between items-start px-4 py-3">
@@ -456,9 +461,14 @@ export function Header({
             <Text className="font-bold">Hi, {user.name}.</Text>
             <Text>Here&apos;s your tasks:</Text>
           </VStack>
-          <Pressable onPress={() => setSearchOpen(true)} className="p-2">
-            <Icon as={SearchIcon} />
-          </Pressable>
+          <HStack>
+            {/* <Pressable onPress={reset} className="p-2">
+              <Icon as={SearchIcon} />
+            </Pressable> */}
+            <Pressable onPress={() => setSearchOpen(true)} className="p-2">
+              <Icon as={SearchIcon} />
+            </Pressable>
+          </HStack>
         </>
       )}
     </HStack>
