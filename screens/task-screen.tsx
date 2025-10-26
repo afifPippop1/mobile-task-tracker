@@ -52,7 +52,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, FlatList, Platform, View } from "react-native";
+import { Alert, Platform, SectionList, View } from "react-native";
 import "react-native-get-random-values";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { v4 as uuid } from "uuid";
@@ -79,12 +79,27 @@ export function TaskScreen() {
     setShowModal(false);
   }
 
+  console.log(tasks);
+
+  const sections = React.useMemo(() => {
+    return Object.values(TaskStatus).map((status) => ({
+      title: status,
+      data: tasks.filter((task) => task.status === status),
+    }));
+  }, [tasks]);
+
   return (
     <SafeAreaView className="gap-8 flex-1 p-6">
       {tasks.length > 0 && (
-        <FlatList
-          data={tasks}
-          renderItem={({ item }) => <TaskItem key={item.id} task={item} />}
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <TaskItem task={item} />}
+          renderSectionHeader={({ section: { title } }) => (
+            <Heading size="sm" className="mt-4 mb-2">
+              {title}
+            </Heading>
+          )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         />
       )}
@@ -162,9 +177,8 @@ function TaskModal(props: {
 }) {
   const { addTask, updateTask } = useTask();
   const form = useForm<Task>({
-    values: props.task,
-    defaultValues: {
-      id: uuid(),
+    defaultValues: props.task ?? {
+      id: "",
       title: "",
       status: TaskStatus.TODO,
     },
@@ -184,7 +198,7 @@ function TaskModal(props: {
     if (props.task) {
       updateTask(taskWithDueTime);
     } else {
-      addTask(taskWithDueTime);
+      addTask({ ...taskWithDueTime, id: uuid() });
     }
     if (dueTime) {
       const now = new Date();
@@ -222,8 +236,8 @@ function TaskModal(props: {
         console.log("Notification scheduled for:", triggerDate);
       }
       // Log scheduled notifications for debugging
-      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-      console.log("Scheduled notifications:", scheduled);
+      // const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      // console.log("Scheduled notifications:", scheduled);
     }
     handleClose();
   }
