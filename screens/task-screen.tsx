@@ -43,15 +43,28 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Task, TaskStatus, useTask } from "@/stores/task-provider";
 import { changeTaskStatus, getTaskStatusColor } from "@/utils/task-status";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, {
+  DateTimePickerAndroid,
+} from "@react-native-community/datetimepicker";
 import dayjs from "dayjs";
+import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
-import { FlatList, View } from "react-native";
+import { Alert, FlatList, Platform, View } from "react-native";
 import "react-native-get-random-values";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { v4 as uuid } from "uuid";
+
+// Configure notification handler
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 export function TaskScreen() {
   const { tasks } = useTask();
@@ -148,27 +161,50 @@ function TaskModal({
   const [dueTime, setDueTime] = React.useState(new Date());
   const [showPicker, setShowPicker] = React.useState(false);
 
-  function onSubmit(task: Task) {
+  async function onSubmit(task: Task) {
     const taskWithDueTime = { ...task, dueTime };
     console.log(taskWithDueTime);
     addTask(taskWithDueTime);
     if (dueTime) {
       const now = new Date();
-      let triggerDate = new Date(dueTime);
-      // If the selected time is earlier than now, schedule for next day
+      const triggerDate = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        dueTime.getHours(),
+        dueTime.getMinutes(),
+        0
+      );
+
+      // If the selected time has already passed today, schedule for tomorrow
       if (triggerDate <= now) {
         triggerDate.setDate(triggerDate.getDate() + 1);
       }
-      Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Task Reminder",
-          body: task.title,
-          sound: true,
-        },
-        trigger: {
-          date: triggerDate,
-        } as Notifications.NotificationTriggerInput,
-      });
+
+      console.log("Now:", now, "Trigger Date:", triggerDate);
+
+      if (Platform.OS === "ios" && !Device.isDevice) {
+        Alert.alert(
+          "Debug",
+          `Notification scheduled for ${dayjs(triggerDate).format("HH:mm")}`
+        );
+      } else {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `Task Reminder: ${task.title}`,
+            body: task.title,
+            sound: true,
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: triggerDate,
+          },
+        });
+        console.log("Notification scheduled for:", triggerDate);
+      }
+      // Log scheduled notifications for debugging
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      console.log("Scheduled notifications:", scheduled);
     }
     handleClose();
   }
@@ -181,7 +217,20 @@ function TaskModal({
   }
 
   function showTimePicker() {
-    setShowPicker(true);
+    if (Platform.OS === "android") {
+      DateTimePickerAndroid.open({
+        value: dueTime,
+        onChange: (event, selectedDate) => {
+          if (selectedDate) {
+            setDueTime(selectedDate);
+          }
+        },
+        mode: "time",
+        is24Hour: true,
+      });
+    } else if (Platform.OS === "ios") {
+      setShowPicker(true);
+    }
   }
 
   return (
@@ -261,7 +310,7 @@ function TaskModal({
               Selected time: {dayjs(dueTime).format("DD-MM-YYYY HH:mm")}
             </Text>
           </Pressable>
-          {showPicker && (
+          {Platform.OS === "ios" && showPicker && (
             <DateTimePicker
               value={dueTime}
               mode="datetime"

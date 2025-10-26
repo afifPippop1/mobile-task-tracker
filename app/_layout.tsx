@@ -3,8 +3,10 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
+import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import React from "react";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -12,6 +14,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import "@/global.css";
 import { AuthProvider } from "@/stores/auth-provider";
+import { Alert } from "react-native";
 
 export const unstable_settings = {
   anchor: "/",
@@ -19,6 +22,22 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  React.useEffect(() => {
+    (async () => {
+      const settings = await Notifications.getPermissionsAsync();
+      console.log("Before requesting:", settings);
+
+      const { status } = await Notifications.requestPermissionsAsync();
+      console.log("After requesting:", status);
+
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Please enable notifications in settings."
+        );
+      }
+    })();
+  }, []);
 
   return (
     <GluestackUIProvider mode="dark">
